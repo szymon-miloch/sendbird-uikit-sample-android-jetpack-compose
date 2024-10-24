@@ -1,5 +1,5 @@
 [versions]
-sendbirdUikitCompose = "1.0.0-beta.1"
+sendbirdUikitCompose = "1.0.0-beta.2"
 ktlint = "0.50.0"
 coilCompose = "2.2.0"
 firebaseBom = "33.1.2"
