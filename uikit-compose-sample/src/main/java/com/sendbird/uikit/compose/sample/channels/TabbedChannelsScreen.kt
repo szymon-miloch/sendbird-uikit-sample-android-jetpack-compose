@@ -125,7 +125,7 @@ fun TabbedChannelsScreen(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         ChannelsScreen(
-                            viewModel = channelsViewModel,
+                            viewModelContract = channelsViewModel,
                             navController = navController,
                             topBar = { _, onActionClick ->
                                 ChannelsTopBar(
