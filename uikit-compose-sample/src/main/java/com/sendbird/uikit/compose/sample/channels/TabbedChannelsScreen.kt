@@ -4,41 +4,19 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
@@ -80,6 +58,10 @@ import kotlinx.coroutines.launch
 fun TabbedChannelsScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
+    isDarkTheme: Boolean = false,
+    doNotDisturb: Boolean = false,
+    onDarkThemeClick: (Boolean) -> Unit = {},
+    onDoNotDisturbClick: (Boolean) -> Unit = {},
     onLogoutClick: () -> Unit = {},
     channelsViewModel: ChannelsViewModel = viewModel(factory = ChannelsViewModel.factory(
         ChannelsViewModelParams(GroupChannelListQueryParams())
@@ -142,6 +124,10 @@ fun TabbedChannelsScreen(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         SettingsScreen(
+                            isDarkTheme = isDarkTheme,
+                            doNotDisturb = doNotDisturb,
+                            onDarkThemeClick = onDarkThemeClick,
+                            onDoNotDisturbClick = onDoNotDisturbClick,
                             onLogoutClick = onLogoutClick
                         )
                     }
@@ -154,6 +140,10 @@ fun TabbedChannelsScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    isDarkTheme: Boolean = false,
+    doNotDisturb: Boolean = false,
+    onDarkThemeClick: (Boolean) -> Unit = {},
+    onDoNotDisturbClick: (Boolean) -> Unit = {},
     onLogoutClick: () -> Unit = {}
 ) {
     Scaffold(
@@ -218,6 +208,58 @@ fun SettingsScreen(
                     text = SendbirdChat.currentUser?.userId ?: "",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onBackground
+                )
+            }
+
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = SendbirdOpacity.ExtraLowOpacity)
+            )
+
+            SettingsMenu(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        onDarkThemeClick(!isDarkTheme)
+                    }
+                    .padding(16.dp),
+                icon = painterResource(id = R.drawable.icon_theme),
+                iconTint = MaterialTheme.colorScheme.onSurface,
+                text = stringResource(id = R.string.text_settings_dark_theme_title)
+            ) {
+                SettingSwitch(
+                    isChecked = isDarkTheme,
+                    onCheckedChange = { onDarkThemeClick(it) },
+                    modifier = Modifier
+                        .scale(0.8f)
+                        .size(24.dp)
+                        .padding(end = 24.dp),
+                )
+            }
+
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = SendbirdOpacity.ExtraLowOpacity)
+            )
+
+            SettingsMenu(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        onDoNotDisturbClick(!doNotDisturb)
+                    }
+                    .padding(16.dp),
+                icon = painterResource(id = R.drawable.icon_notifications_filled),
+                iconTint = MaterialTheme.colorScheme.secondary,
+                text = stringResource(id = R.string.text_settings_do_not_disturb_title)
+            ) {
+                SettingSwitch(
+                    isChecked = doNotDisturb,
+                    onCheckedChange = { onDoNotDisturbClick(it) },
+                    modifier = Modifier
+                        .scale(0.8f)
+                        .size(24.dp)
+                        .padding(end = 24.dp),
                 )
             }
 
@@ -325,7 +367,7 @@ fun ChannelsAndSettingsTabRow(
                             } else {
                                 painterResource(id = currentTab.unselectedIcon)
                             },
-                            contentDescription = "Tab Icon"
+                            contentDescription = null
                         )
                     }
                 }
@@ -377,4 +419,35 @@ fun ChannelsAndSettingsTabRowPreview() {
             SendbirdScreenUiState.Success, tabUiData, pagerState
         )
     }
+}
+
+@Composable
+private fun SettingSwitch(
+    modifier: Modifier = Modifier,
+    isChecked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Switch(
+        checked = isChecked,
+        onCheckedChange = onCheckedChange,
+        modifier = modifier,
+        colors = SwitchColors(
+            checkedThumbColor = MaterialTheme.colorScheme.primary,
+            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+            checkedBorderColor = Color.Transparent,
+            checkedIconColor = Color.Transparent,
+            uncheckedThumbColor = MaterialTheme.colorScheme.inversePrimary,
+            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+            uncheckedBorderColor = Color.Transparent,
+            uncheckedIconColor = Color.Transparent,
+            disabledCheckedThumbColor = MaterialTheme.colorScheme.inversePrimary,
+            disabledCheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+            disabledCheckedBorderColor = Color.Transparent,
+            disabledCheckedIconColor = Color.Transparent,
+            disabledUncheckedThumbColor = MaterialTheme.colorScheme.inversePrimary,
+            disabledUncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+            disabledUncheckedBorderColor = Color.Transparent,
+            disabledUncheckedIconColor = Color.Transparent,
+        )
+    )
 }
