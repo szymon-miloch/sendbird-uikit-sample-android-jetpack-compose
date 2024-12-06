@@ -9,13 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -25,6 +19,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.sendbird.android.SendbirdChat
+import com.sendbird.android.ktx.extension.awaitSetDoNotDisturb
 import com.sendbird.android.ktx.extension.awaitUpdateCurrentUserInfo
 import com.sendbird.android.ktx.extension.push.awaitUnregisterHandler
 import com.sendbird.android.params.UserUpdateParams
@@ -41,9 +36,11 @@ import com.sendbird.uikit.compose.sample.fcm.MyFirebaseMessagingService
 import com.sendbird.uikit.compose.sample.login.LoginRoute
 import com.sendbird.uikit.compose.sample.login.LoginScreen
 import com.sendbird.uikit.compose.sample.pref.SendbirdUikitPref
+import com.sendbird.uikit.compose.theme.SendbirdTheme
 import com.sendbird.uikit.core.data.model.UikitCurrentUserInfo
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.TimeZone
 
 @Composable
 fun SendbirdUikitApp(
@@ -55,6 +52,8 @@ fun SendbirdUikitApp(
     val snackbarHostState = remember { SnackbarHostState() }
     val viewScope = rememberCoroutineScope()
     var isLoading by remember { mutableStateOf(false) }
+    var isDarkTheme by remember { mutableStateOf(appState.isDarkTheme) }
+    var doNotDisturb by remember { mutableStateOf(appState.doNotDisturb) }
 
     LaunchedEffect(appState.isLoggedIn) {
         if (appState.isLoggedIn) {
@@ -112,9 +111,28 @@ fun SendbirdUikitApp(
 
             sendbirdGroupChannelNavGraph(
                 navController = navController,
+                theme = { content ->
+                    SendbirdTheme(
+                        isDarkTheme = isDarkTheme
+                    ) {
+                        content()
+                    }
+                },
                 channelsScreen = {
                     TabbedChannelsScreen(
                         navController = navController,
+                        isDarkTheme = isDarkTheme,
+                        doNotDisturb = doNotDisturb,
+                        onDarkThemeClick = { darkTheme ->
+                            appState.updateDarkTheme(darkTheme)
+                            isDarkTheme = darkTheme
+                        },
+                        onDoNotDisturbClick = {
+                            viewScope.launch {
+                                appState.updateDoNotDisturb(it)
+                                doNotDisturb = it
+                            }
+                        },
                         onLogoutClick = {
                             viewScope.launch {
                                 runCatching {
@@ -155,6 +173,10 @@ class SendbirdUikitSampleAppState(context: Context) {
     val pref = SendbirdUikitPref(context)
     val isLoggedIn: Boolean
         get() = pref.userId.isNotEmpty()
+    val isDarkTheme: Boolean
+        get() = pref.themeMode
+    val doNotDisturb: Boolean
+        get() = pref.doNotDisturb
 
     suspend fun saveAppId(appId: String) {
         pref.appId = appId
@@ -206,5 +228,22 @@ class SendbirdUikitSampleAppState(context: Context) {
             onNavigateToChannel(channelUrl)
             intent.removeExtra(MyFirebaseMessagingService.PUSH_REDIRECT_CHANNEL)
         }
+    }
+
+    fun updateDarkTheme(isDarkTheme: Boolean) {
+        pref.themeMode = isDarkTheme
+    }
+
+    suspend fun updateDoNotDisturb(doNotDisturb: Boolean) {
+        val (startHour, startMin, endHour, endMin) = listOf(0, 0, 23, 59)
+        pref.doNotDisturb = doNotDisturb
+        SendbirdChat.awaitSetDoNotDisturb(
+            doNotDisturbOn = doNotDisturb,
+            startHour,
+            startMin,
+            endHour,
+            endMin,
+            TimeZone.getDefault().id
+        )
     }
 }

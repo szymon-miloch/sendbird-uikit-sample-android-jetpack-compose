@@ -14,6 +14,8 @@
 
     <!--  Settings  -->
     <string name="text_settings_header_title">My settings</string>
+    <string name="text_settings_dark_theme_title">Dark theme</string>
+    <string name="text_settings_do_not_disturb_title">Do not disturb</string>
     <string name="text_settings_logout_title">Logout</string>
     <string name="text_tab_channels">Channels</string>
     <string name="text_tab_settings">Settings</string>
